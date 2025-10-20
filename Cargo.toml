@@ -3,9 +3,6 @@ name = "web3_wallet"
 version = "0.1.0"
 edition = "2021"
 
-[[example]]
-name = "basic_usage"
-path = "examples/basic_usage.rs"
 
 [dependencies]
 tokio = { version = "1.0", features = ["full"] }
