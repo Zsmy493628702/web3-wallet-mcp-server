@@ -17,22 +17,41 @@ A Model Context Protocol (MCP) server in Rust that enables AI agents to interact
 - Set `PRIVATE_KEY` environment variable (required for startup)
 - Uses hardcoded Alchemy mainnet RPC and Price API key
 
-## 🛠️ Installation & Setup
+## 🛠️ Setup Instructions
 
+### Dependencies
+- **Rust**: Install from [rustup.rs](https://rustup.rs/)
+- **Cargo**: Comes with Rust installation
+- **Environment Variables**: Required for server operation
+
+### Environment Variables
+```bash
+# Required: Private key for wallet operations (can be any valid hex string)
+export PRIVATE_KEY=0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+
+# Optional: Logging configuration
+export RUST_LOG=info
+export LOG_FORMAT=json  # or pretty for human-readable logs
+```
+
+### How to Run
 1. **Clone the repository**:
 ```bash
-git clone https://github.com/yourusername/web3-wallet-mcp-server.git
+git clone https://github.com/Zsmy493628702/web3-wallet-mcp-server.git
 cd web3-wallet-mcp-server
 ```
 
-2. **Set environment variables**:
+2. **Build the project**:
 ```bash
-export PRIVATE_KEY=0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-export RUST_LOG=info
-export LOG_FORMAT=json  # or pretty
+cargo build
 ```
 
-3. **Run the server**:
+3. **Run tests**:
+```bash
+cargo test
+```
+
+4. **Start the server**:
 ```bash
 cargo run --bin simple_server
 ```
@@ -73,26 +92,45 @@ Simulate token swaps using Uniswap protocols.
 
 **Engine**: Uses Uniswap V3 Quoter v1 via `eth_call` with V2 reserve-based fallback for maximum compatibility.
 
-## 📖 Usage Examples
+## 📖 Example MCP Tool Call
 
-### Query Wallet Balance
-```bash
-curl -s -X POST http://localhost:3000/mcp \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "jsonrpc":"2.0","id":1,
-    "method":"tools/call",
-    "params":{
-      "name":"get_balance",
-      "arguments":{
-        "address":"0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
-        "token_address":"0xdAC17F958D2ee523a2206206994597C13D831ec7"
-      }
+### Complete Request/Response Example
+
+**Request**:
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "get_balance",
+    "arguments": {
+      "address": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+      "token_address": "0xdAC17F958D2ee523a2206206994597C13D831ec7"
     }
-  }'
+  }
+}
 ```
 
-### Get Token Price
+**Response**:
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"eth_balance\":\"0.0\",\"token_balances\":[{\"token_address\":\"0xdAC17F958D2ee523a2206206994597C13D831ec7\",\"symbol\":\"USDT\",\"name\":\"Tether USD\",\"decimals\":6,\"balance_wei\":\"0\",\"balance_formatted\":\"0.000000\"}]}"
+      }
+    ]
+  }
+}
+```
+
+### Additional Examples
+
+**Get Token Price**:
 ```bash
 curl -s -X POST http://localhost:3000/mcp \
   -H 'Content-Type: application/json' \
@@ -106,7 +144,7 @@ curl -s -X POST http://localhost:3000/mcp \
   }'
 ```
 
-### Simulate Token Swap
+**Simulate Token Swap**:
 ```bash
 curl -s -X POST http://localhost:3000/mcp \
   -H 'Content-Type: application/json' \
@@ -137,6 +175,10 @@ The project follows a modular architecture with clear separation of concerns:
 - **`src/logging.rs`**: Structured logging with request tracing
 - **`src/types.rs`**: Type definitions for requests and responses
 
+## 🎯 Design Decisions
+
+This MCP server prioritizes **simplicity and reliability** over complex features. We chose **Uniswap V3 Quoter** as the primary swap simulation engine because it provides the most accurate pricing through direct contract calls, with **V2 reserve-based fallback** for maximum compatibility when V3 pools don't exist. The **Alchemy Price API** integration ensures real-time market data without maintaining our own price feeds. **Structured logging with request IDs** enables effective debugging and monitoring in production environments. The **modular architecture** allows for easy extension and testing of individual components without affecting the overall system stability.
+
 ## 🧪 Testing
 
 Run the test suite:
@@ -144,12 +186,25 @@ Run the test suite:
 cargo test -- --test-threads=1
 ```
 
-## ⚠️ Limitations
+## ⚠️ Known Limitations & Assumptions
 
-- RPC endpoint is hardcoded to Alchemy mainnet
-- Gas estimation may fail for dry-run transactions (fallback values used)
-- Token metadata queries with known-token fallback
-- No actual transaction signing or execution
+### Technical Limitations
+- **Hardcoded RPC**: Uses Alchemy mainnet endpoint only - no multi-network support
+- **Gas Estimation**: May fail for complex transactions, falls back to estimated values (200,000 gas)
+- **Token Metadata**: Relies on known-token database for symbol/name when contract calls fail
+- **No Transaction Execution**: Simulation only - no actual blockchain transactions
+
+### Assumptions
+- **Mainnet Focus**: Designed for Ethereum mainnet operations only
+- **Alchemy Dependency**: Requires Alchemy API access for optimal functionality
+- **Single Wallet**: Uses one hardcoded private key for all operations
+- **V3/V2 Priority**: Assumes Uniswap V3 pools exist, falls back to V2 when needed
+- **Price Accuracy**: Assumes Alchemy Price API provides reliable market data
+
+### Performance Considerations
+- **RPC Rate Limits**: Subject to Alchemy API rate limiting
+- **Network Latency**: Ethereum RPC calls may introduce delays
+- **Memory Usage**: Token metadata caching may consume memory for large queries
 
 ## 🤝 Contributing
 
